@@ -90,4 +90,27 @@ public class RaceCore extends JavaPlugin {
             abilities.apply(on);
         }
     }
+
+    public void rerollNow(Player p) {
+        DataManager.PlayerData d = data.get(p.getUniqueId());
+        if (d.rerollBalance < 1) { p.sendMessage(msg("no-rerolls")); return; }
+        d.rerollBalance--;
+        Race r = races.roll();
+        setRace(p, r);
+        p.sendMessage(msg("roll-success", "{race}", color(r.display)));
+    }
+
+    public void buyReroll(Player p) {
+        if (economy == null) { p.sendMessage(msg("no-economy")); return; }
+        double cost = getConfig().getDouble("economy.reroll-cost", 5000000);
+        String c = String.format("%,.0f", cost);
+        if (!economy.has(p, cost) || !economy.withdrawPlayer(p, cost).transactionSuccess()) {
+            p.sendMessage(msg("not-enough-money", "{cost}", c));
+            return;
+        }
+        DataManager.PlayerData d = data.get(p.getUniqueId());
+        d.rerollBalance++;
+        data.save();
+        p.sendMessage(msg("reroll-bought", "{cost}", c, "{balance}", String.valueOf(d.rerollBalance)));
+    }
 }
