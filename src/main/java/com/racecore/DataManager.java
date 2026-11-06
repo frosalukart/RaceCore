@@ -1,24 +1,24 @@
 package com.racecore;
 
-import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class DataManager {
-    public static class PlayerData {
-        public String race = "human";
-        public boolean freeRollUsed = false;
-        public int rerollBalance = 0;
-    }
-
     private final RaceCore plugin;
     private final File file;
-    private final Map<UUID, PlayerData> map = new HashMap<>();
+    private FileConfiguration config;
+    private final Map<UUID, PlayerData> players = new HashMap<>();
+
+    public static class PlayerData {
+        public String race = "human";
+        public int rerollBalance = 0;
+        public boolean freeRollUsed = false;
+        public int pityCount = 0;
+    }
 
     public DataManager(RaceCore plugin) {
         this.plugin = plugin;
@@ -26,59 +26,63 @@ public class DataManager {
     }
 
     public void load() {
-        map.clear();
-        YamlConfiguration c = YamlConfiguration.loadConfiguration(file);
-        ConfigurationSection s = c.getConfigurationSection("players");
-        if (s == null) return;
-        for (String key : s.getKeys(false)) {
-            try {
-                PlayerData d = new PlayerData();
-                d.race = s.getString(key + ".race", "human").toLowerCase();
-                d.freeRollUsed = s.getBoolean(key + ".free-roll-used", false);
-                d.rerollBalance = s.getInt(key + ".reroll-balance", 0);
-                map.put(UUID.fromString(key), d);
-            } catch (IllegalArgumentException ignored) { }
+        if (!file.exists()) plugin.saveResource("players.yml", false);
+        config = YamlConfiguration.loadConfiguration(file);
+        players.clear();
+
+        if (config.isConfigurationSection("players")) {
+            for (String key : config.getConfigurationSection("players").getKeys(false)) {
+                try {
+                    UUID id = UUID.fromString(key);
+                    PlayerData d = new PlayerData();
+                    d.race = config.getString("players." + key + ".race", "human");
+                    d.rerollBalance = config.getInt("players." + key + ".rerollBalance", 0);
+                    d.freeRollUsed = config.getBoolean("players." + key + ".freeRollUsed", false);
+                    d.pityCount = config.getInt("players." + key + ".pityCount", 0);
+                    players.put(id, d);
+                } catch (IllegalArgumentException ignored) {}
+            }
         }
     }
 
-    public synchronized void save() {
-        YamlConfiguration c = new YamlConfiguration();
-        for (Map.Entry<UUID, PlayerData> e : map.entrySet()) {
-            String k = "players." + e.getKey();
-            c.set(k + ".race", e.getValue().race);
-            c.set(k + ".free-roll-used", e.getValue().freeRollUsed);
-            c.set(k + ".reroll-balance", e.getValue().rerollBalance);
+    public void save() {
+        if (config == null) return;
+        for (Map.Entry<UUID, PlayerData> e : players.entrySet()) {
+            String path = "players." + e.getKey().toString();
+            config.set(path + ".race", e.getValue().race);
+            config.set(path + ".rerollBalance", e.getValue().rerollBalance);
+            config.set(path + ".freeRollUsed", e.getValue().freeRollUsed);
+            config.set(path + ".pityCount", e.getValue().pityCount);
         }
-        try { c.save(file); } catch (IOException ex) { plugin.getLogger().severe("Could not save players.yml: " + ex.getMessage()); }
+        try { config.save(file); } catch (IOException ex) { plugin.getLogger().severe("Could not save players.yml"); }
     }
 
-    public PlayerData get(UUID id) { return map.computeIfAbsent(id, k -> new PlayerData()); }
-    public boolean has(UUID id) { return map.containsKey(id); }
+    public PlayerData get(UUID id) {
+        return players.computeIfAbsent(id, k -> new PlayerData());
+    }
 
     public Race raceOf(UUID id) {
-        Race r = plugin.races().get(get(id).race);
-        return r == null ? plugin.races().human() : r;
+        PlayerData d = get(id);
+        Race r = plugin.races().get(d.race);
+        return r != null ? r : plugin.races().human();
     }
 
-    /** Imports plugins/RaceSystem/playerdata.yml from the old plugin. Returns number imported, or -1 if no file. */
     public int migrateOld() {
-        File old = new File(plugin.getDataFolder().getParentFile(), "RaceSystem/playerdata.yml");
-        if (!old.exists()) return -1;
-        YamlConfiguration c = YamlConfiguration.loadConfiguration(old);
-        ConfigurationSection s = c.getConfigurationSection("players");
-        if (s == null) return 0;
+        File oldFile = new File(plugin.getDataFolder().getParentFile(), "RaceSystem/players.yml");
+        if (!oldFile.exists()) return -1;
+        YamlConfiguration oldConfig = YamlConfiguration.loadConfiguration(oldFile);
+        if (!oldConfig.isConfigurationSection("players")) return 0;
         int count = 0;
-        for (String key : s.getKeys(false)) {
+        for (String key : oldConfig.getConfigurationSection("players").getKeys(false)) {
             try {
                 UUID id = UUID.fromString(key);
-                PlayerData d = new PlayerData();
-                String race = s.getString(key + ".race", "human").toLowerCase();
-                d.race = plugin.races().get(race) != null ? race : "human";
-                d.freeRollUsed = s.getBoolean(key + ".free-roll-used", true);
-                d.rerollBalance = s.getInt(key + ".reroll-balance", 0);
-                map.put(id, d);
+                PlayerData d = get(id);
+                d.race = oldConfig.getString("players." + key + ".race", d.race);
+                d.rerollBalance = oldConfig.getInt("players." + key + ".rerollBalance", d.rerollBalance);
+                d.freeRollUsed = oldConfig.getBoolean("players." + key + ".freeRollUsed", d.freeRollUsed);
+                d.pityCount = oldConfig.getInt("players." + key + ".pityCount", d.pityCount);
                 count++;
-            } catch (IllegalArgumentException ignored) { }
+            } catch (IllegalArgumentException ignored) {}
         }
         save();
         return count;

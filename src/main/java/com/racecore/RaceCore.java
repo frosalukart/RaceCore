@@ -41,6 +41,7 @@ public class RaceCore extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
         getServer().getPluginManager().registerEvents(new CombatListener(this), this);
+        getServer().getPluginManager().registerEvents(new WeaponSynergyListener(this), this);
 
         Commands cmds = new Commands(this);
         for (String name : new String[]{"race", "reroll", "removerace", "racemanage", "racesystem"}) {
@@ -51,7 +52,7 @@ public class RaceCore extends JavaPlugin {
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new RaceExpansion(this).register();
         }
-        getLogger().info("Loaded " + count + " races.");
+        getLogger().info("Loaded " + count + " races with Pity System & Synergy.");
     }
 
     @Override
@@ -67,7 +68,6 @@ public class RaceCore extends JavaPlugin {
 
     public static String color(String s) { return ChatColor.translateAlternateColorCodes('&', s == null ? "" : s); }
 
-    /** Message from config with the prefix. Replacements are key,value pairs. */
     public String msg(String key, String... pairs) {
         String s = getConfig().getString("messages." + key, key);
         for (int i = 0; i + 1 < pairs.length; i += 2) s = s.replace(pairs[i], pairs[i + 1]);
@@ -95,8 +95,17 @@ public class RaceCore extends JavaPlugin {
         DataManager.PlayerData d = data.get(p.getUniqueId());
         if (d.rerollBalance < 1) { p.sendMessage(msg("no-rerolls")); return; }
         d.rerollBalance--;
-        Race r = races.roll();
+        d.pityCount++;
+
+        Race r = races.rollWithPity(d.pityCount);
+
+        String rarity = r.rarity.toLowerCase();
+        if (rarity.contains("epic") || rarity.contains("legendary") || rarity.contains("mythic")) {
+            d.pityCount = 0;
+        }
+
         setRace(p, r);
+        data.save();
         p.sendMessage(msg("roll-success", "{race}", color(r.display)));
     }
 

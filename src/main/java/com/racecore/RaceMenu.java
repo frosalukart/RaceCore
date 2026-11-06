@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/** One hub GUI: info, roll, buy, race list, remove race, admin panel. */
 public class RaceMenu {
     public enum Type { MAIN, RACES, CONFIRM_REMOVE, ADMIN_PLAYERS, ADMIN_RACES }
 
@@ -26,7 +25,6 @@ public class RaceMenu {
         @Override public Inventory getInventory() { return null; }
     }
 
-    // ---------- helpers ----------
     private static ItemStack item(Material m, String name, String... lore) {
         ItemStack it = new ItemStack(m);
         ItemMeta meta = it.getItemMeta();
@@ -63,11 +61,12 @@ public class RaceMenu {
         return it;
     }
 
-    // ---------- screens ----------
     public static void openMain(RaceCore plugin, Player p) {
         Inventory inv = Bukkit.createInventory(new Holder(Type.MAIN, null), 54, RaceCore.color("&8&lRaceCore Menu"));
         Race r = plugin.data().raceOf(p.getUniqueId());
-        int bal = plugin.data().get(p.getUniqueId()).rerollBalance;
+        DataManager.PlayerData pd = plugin.data().get(p.getUniqueId());
+        int bal = pd.rerollBalance;
+        int pity = pd.pityCount;
         double cost = plugin.getConfig().getDouble("economy.reroll-cost", 5000000);
 
         ItemStack head = new ItemStack(Material.PLAYER_HEAD);
@@ -77,7 +76,8 @@ public class RaceMenu {
         List<String> lore = new ArrayList<>();
         lore.add(RaceCore.color("&7Ras: " + r.display));
         lore.add(RaceCore.color("&7Rarity: &f" + r.rarity));
-        lore.add(RaceCore.color("&7Reroll: &e" + bal));
+        lore.add(RaceCore.color("&7Reroll Balance: &e" + bal));
+        lore.add(RaceCore.color("&7Pity Counter: &d" + pity + "/10 " + (pity >= 10 ? "&a(HOKI BOOST!)" : "")));
         lore.add("");
         for (String line : r.description) lore.add(RaceCore.color(line));
         sm.setLore(lore);
@@ -85,7 +85,7 @@ public class RaceMenu {
         inv.setItem(4, head);
 
         inv.setItem(20, item(Material.ENDER_EYE, "&a&lRoll Ras",
-                "&7Reroll kamu: &e" + bal, "", "&eKlik untuk acak ras baru"));
+                "&7Reroll kamu: &e" + bal, "&7Pity saat ini: &d" + pity, "", "&eKlik untuk acak ras baru"));
         inv.setItem(22, item(Material.BOOK, "&b&lDaftar Ras",
                 "&7Lihat semua ras dan kemampuannya", "", "&eKlik untuk membuka"));
         inv.setItem(24, item(Material.GOLD_INGOT, "&6&lBeli Reroll",
@@ -159,7 +159,6 @@ public class RaceMenu {
         p.openInventory(inv);
     }
 
-    // ---------- click handling ----------
     public static void click(RaceCore plugin, Player p, Holder h, int slot, ItemStack clicked) {
         if (clicked == null) return;
         p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.6f, 1f);
