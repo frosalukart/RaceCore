@@ -1,45 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.racecore</groupId>
+  <artifactId>RaceCore</artifactId>
+  <version>2.0.0</version>
+  <packaging>jar</packaging>
 
-    <groupId>com.namaanda</groupId>
-    <artifactId>RaceCore</artifactId>
-    <version>1.0-SNAPSHOT</version>
+  <properties>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- CHANGE THIS to match your server's Paper version -->
+    <paper.version>1.21.4-R0.1-SNAPSHOT</paper.version>
+  </properties>
 
-    <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-    </properties>
+  <repositories>
+    <repository><id>papermc</id><url>https://repo.papermc.io/repository/maven-public/</url></repository>
+    <repository><id>jitpack.io</id><url>https://jitpack.io</url></repository>
+    <repository><id>placeholderapi</id><url>https://repo.extendedclip.com/content/repositories/placeholderapi/</url></repository>
+  </repositories>
 
-    <repositories>
-        <!-- Spigot Repo -->
-        <repository>
-            <id>spigot-repo</id>
-            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
-        </repository>
-        <!-- Repo untuk AuraSkills (Aurelium) -->
-        <repository>
-            <id>aurelium-repo</id>
-            <url>https://repo.aurelium.dev/repository/public/</url>
-        </repository>
-    </repositories>
+  <dependencies>
+    <dependency><groupId>io.papermc.paper</groupId><artifactId>paper-api</artifactId><version>${paper.version}</version><scope>provided</scope></dependency>
+    <dependency><groupId>com.github.MilkBowl</groupId><artifactId>VaultAPI</artifactId><version>1.7</version><scope>provided</scope></dependency>
+    <dependency><groupId>me.clip</groupId><artifactId>placeholderapi</artifactId><version>2.11.6</version><scope>provided</scope></dependency>
+  </dependencies>
 
-    <dependencies>
-        <!-- Spigot API -->
-        <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
-            <version>1.20.4-R0.1-SNAPSHOT</version> <!-- Sesuaikan versi server Anda -->
-            <scope>provided</scope>
-        </dependency>
-        <!-- AuraSkills API -->
-        <dependency>
-            <groupId>dev.aurelium</groupId>
-            <artifactId>auraskills-api</artifactId>
-            <version>2.0.4</version> <!-- Sesuaikan dengan versi AuraSkills terbaru -->
-            <scope>provided</scope>
-        </dependency>
-    </dependencies>
+  <build><finalName>RaceCore-${project.version}</finalName></build>
 </project>
