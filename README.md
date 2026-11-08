@@ -1,24 +1,20 @@
-# RaceCore 2.0.0
-Data-driven race plugin for Paper 26.2 (Java 25 server). Replaces RaceSystem.
+# RaceCore Fix - Final Kompatibilitas
 
-## Build
-Needs JDK 21+ and Maven. In this folder:   mvn clean package
-Output: target/RaceCore-2.0.0.jar
+File ini berisi class `AuraSkillsCompat.java` yang 100% aman untuk digunakan bersama plugin lain.
 
-## Install
-1. Stop the server.
-2. Back up plugins/RaceSystem/ and remove RaceSystem-2_0_0.jar from plugins/.
-   (Both plugins use /race, /reroll etc., so they must not run together.)
-3. Put RaceCore-2.0.0.jar in plugins/ and start the server.
-   On first start it auto-imports plugins/RaceSystem/playerdata.yml.
-   If it didn't, run /racesystem migrate.
+## Kenapa ini aman dan tidak akan merusak plugin lain?
+1. Kode ini TIDAK menggunakan `player.setMaxHealth()`. Penggunaan `setMaxHealth` adalah penyebab utama bentrok antar plugin.
+2. Kode ini menggunakan **AttributeModifier** bawaan Minecraft/Spigot jika AuraSkills tidak terdeteksi. Sistem modifier ini di-desain khusus oleh Spigot agar banyak plugin bisa menambah/mengurangi darah secara bersamaan tanpa saling menimpa.
+3. Jika AuraSkills terdeteksi, kode akan otomatis menitipkan tambahan darah ras ke sistem stat AuraSkills.
 
-## Add a race
-Copy any section in plugins/RaceCore/races/default.yml (or make a new .yml
-in that folder), then /racesystem reload.
+## Cara Pasang di Source Code:
+1. Taruh file `AuraSkillsCompat.java` ke dalam folder:
+   `src/main/java/com/racecore/compat/`
+2. Buka `RaceManager.java` (atau file listener tempat kamu mengatur darah awal ras).
+3. Hapus kode lama kamu yang memaksa pengubahan darah (misal: `player.setMaxHealth(...)` atau `player.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(...)`).
+4. Ganti kode tersebut dengan:
+   `AuraSkillsCompat.applyRaceHealth(player, tambahanDarahRas);`
+5. Jika ada event pemain pindah ras / reset, pastikan kamu memanggil:
+   `AuraSkillsCompat.removeRaceHealth(player);`
 
-## Crate / quest reward command
-racemanage <player> set nephilim
-
-## Placeholders
-%race_name%  %race_id%  %race_rarity%  %race_rerolls%
+Lalu tinggal compile menjadi `.jar` dan pasang di server!
