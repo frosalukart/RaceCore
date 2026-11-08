@@ -3,7 +3,7 @@ version: '2.0.0'
 main: com.racecore.RaceCore
 api-version: '1.21'
 description: Data-driven race system. Every race is a YAML file.
-softdepend: [Vault, PlaceholderAPI, floodgate]
+softdepend: [AuraSkills, Vault, PlaceholderAPI, floodgate]
 commands:
   race:
     description: View races and your current race.
