@@ -64,10 +64,18 @@ public class AbilityManager {
 
         double hp = (night && r.nightMaxHealth > 0) ? r.nightMaxHealth : r.maxHealth;
         hp = Math.max(2.0, hp);
-        setBase(p, Attribute.MAX_HEALTH, hp);
+        
+        // BUG FIX: Menggunakan kompatibilitas AuraSkills agar health modifier tidak rusak/bentrok
+        com.racecore.compat.AuraSkillsCompat.applyRaceHealth(p, hp - 20.0);
+        
         setBase(p, Attribute.SCALE, r.scale);
         setBase(p, Attribute.KNOCKBACK_RESISTANCE, r.knockbackResistance);
-        if (p.getHealth() > hp) p.setHealth(hp);
+        
+        // Memastikan darah pemain yang ada sekarang tidak melebihi kapasitas max health yang baru
+        AttributeInstance maxHpInst = p.getAttribute(Attribute.MAX_HEALTH);
+        if (maxHpInst != null && p.getHealth() > maxHpInst.getValue()) {
+            p.setHealth(maxHpInst.getValue());
+        }
 
         AttributeInstance speed = p.getAttribute(Attribute.MOVEMENT_SPEED);
         if (speed != null) {
@@ -108,6 +116,9 @@ public class AbilityManager {
 
     /** Removes everything the given race granted (call when the race changes or player leaves). */
     public void release(Player p, Race old) {
+        // Hapus bonus health ketika efek race dilepas
+        com.racecore.compat.AuraSkillsCompat.removeRaceHealth(p);
+        
         if (old != null) for (PotionEffectType t : old.allEffectTypes()) p.removePotionEffect(t);
         if (flyers.remove(p.getUniqueId()) && (p.getGameMode() == GameMode.SURVIVAL || p.getGameMode() == GameMode.ADVENTURE)) {
             p.setAllowFlight(false);

@@ -41,7 +41,13 @@ public class PlayerListener implements Listener {
 
     @EventHandler
     public void onClick(InventoryClickEvent e) {
-        if (e.getView().getTopInventory().getHolder() instanceof RaceMenu.Holder) e.setCancelled(true);
+        if (e.getView().getTopInventory().getHolder() instanceof RaceMenu.Holder h) {
+            e.setCancelled(true);
+            if (e.getClickedInventory() != null && e.getClickedInventory().equals(e.getView().getTopInventory())
+                    && e.getWhoClicked() instanceof Player p) {
+                RaceMenu.click(plugin, p, h, e.getSlot(), e.getCurrentItem());
+            }
+        }
     }
 
     @EventHandler

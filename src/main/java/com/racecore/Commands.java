@@ -34,35 +34,23 @@ public class Commands implements CommandExecutor, TabCompleter {
         if (!(s instanceof Player p)) { s.sendMessage(plugin.msg("player-only")); return true; }
         Race r = plugin.data().raceOf(p.getUniqueId());
         p.sendMessage(plugin.msg("your-race", "{race}", RaceCore.color(r.display)));
-        RaceMenu.open(plugin, p);
+        RaceMenu.openMain(plugin, p);
         return true;
     }
 
     private boolean reroll(CommandSender s, String[] a) {
         if (!(s instanceof Player p)) { s.sendMessage(plugin.msg("player-only")); return true; }
-        DataManager.PlayerData d = plugin.data().get(p.getUniqueId());
-        if (a.length > 0 && a[0].equalsIgnoreCase("balance")) {
-            p.sendMessage(plugin.msg("reroll-balance", "{balance}", String.valueOf(d.rerollBalance)));
-            return true;
-        }
-        if (a.length > 0 && a[0].equalsIgnoreCase("buy")) {
-            Economy eco = plugin.economy();
-            if (eco == null) { p.sendMessage(plugin.msg("no-economy")); return true; }
-            double cost = plugin.getConfig().getDouble("economy.reroll-cost", 5000000);
-            if (!eco.has(p, cost) || !eco.withdrawPlayer(p, cost).transactionSuccess()) {
-                p.sendMessage(plugin.msg("not-enough-money", "{cost}", String.format("%,.0f", cost)));
-                return true;
+        if (a.length > 0) {
+            switch (a[0].toLowerCase(Locale.ROOT)) {
+                case "balance":
+                    p.sendMessage(plugin.msg("reroll-balance", "{balance}", String.valueOf(plugin.data().get(p.getUniqueId()).rerollBalance)));
+                    return true;
+                case "buy": plugin.buyReroll(p); return true;
+                case "use": plugin.rerollNow(p); return true;
+                default: break;
             }
-            d.rerollBalance++;
-            plugin.data().save();
-            p.sendMessage(plugin.msg("reroll-bought", "{cost}", String.format("%,.0f", cost), "{balance}", String.valueOf(d.rerollBalance)));
-            return true;
         }
-        if (d.rerollBalance < 1) { p.sendMessage(plugin.msg("no-rerolls")); return true; }
-        d.rerollBalance--;
-        Race rolled = plugin.races().roll();
-        plugin.setRace(p, rolled);
-        p.sendMessage(plugin.msg("roll-success", "{race}", RaceCore.color(rolled.display)));
+        RaceMenu.openMain(plugin, p);
         return true;
     }
 
@@ -136,7 +124,7 @@ public class Commands implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender s, Command c, String label, String[] a) {
         List<String> out = new ArrayList<>();
         String name = c.getName().toLowerCase(Locale.ROOT);
-        if (name.equals("reroll") && a.length == 1) { out.add("buy"); out.add("balance"); }
+        if (name.equals("reroll") && a.length == 1) { out.add("buy"); out.add("balance"); out.add("use"); }
         else if (name.equals("racesystem") && a.length == 1) { out.add("reload"); out.add("migrate"); out.add("help"); }
         else if (name.equals("racemanage")) {
             if (a.length == 1) for (Player p : Bukkit.getOnlinePlayers()) out.add(p.getName());
